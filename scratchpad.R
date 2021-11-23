@@ -139,6 +139,7 @@ make_comparison_plot <- function(p_data, names) {
       ggplot(aes(fill = type)) + 
       base_map(bbox, increase_zoom = 2, basemap = "google-hybrid") +
       geom_sf(alpha = 0.5, color = NA) +
+      scale_fill_manual(values = c("#1b9e77", "#e7298a")) + 
       # guides(fill = "none") +
       labs(title = glue::glue("{title} | {pct}")) +
       ggthemes::theme_map()

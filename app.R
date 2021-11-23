@@ -3,6 +3,17 @@ library(tidyverse)
 library(sf)
 library(basemapR)
 
+
+## Setup app theme ----
+my_theme <- bslib::bs_theme(
+  bootswatch = "litera"
+)
+thematic::thematic_shiny(
+  font = "auto"
+)
+
+
+## Utility functions ----
 prepare_data <- function(uc, fau) {
   data <- fau %>% 
     mutate(type = "Functional Urban Area") %>% 
@@ -50,9 +61,10 @@ make_comparison_plot <- function(p_data, names) {
     bbox <- expand_bbox(st_bbox(d), X = 1, Y = 1)
     
     d %>% 
-      ggplot(aes(fill = type), environment = environment()) + 
+      ggplot(aes(fill = type)) + 
       base_map(bbox, increase_zoom = 2, basemap = "google-hybrid") +
       geom_sf(alpha = 0.5, color = NA) +
+      scale_fill_manual(values = c("#1b9e77", "#e7298a")) + 
       # guides(fill = "none") +
       labs(title = glue::glue("{title} | {pct}")) +
       ggthemes::theme_map()
@@ -79,27 +91,47 @@ make_comparison_plot <- function(p_data, names) {
       length(names) == 1 ~ 1,
       length(names) == 2 ~ 2,
       length(names) == 3 ~ 2,
+      length(names) == 4 ~ 2,
       TRUE ~ 3
     )
   ) +
     patchwork::plot_layout(guides = 'collect') + 
     patchwork::plot_annotation(
-      # title = "Urban Sprawl",
+      title = "Urban Sprawl",
       subtitle = "Data from the Global Human Settlement Layer (GHSL)\n",
       caption = "map data © 2020 Google"
     )
 }
 
 
+## UI ----
 ui <- fluidPage(
-  style = "height: 600px",
+  theme = my_theme,
   
-  titlePanel("Urban Sprawl"),
+  # titlePanel("Urban Sprawl"),
+  br(),
   
   sidebarLayout(
     
     sidebarPanel(
       width = 3,
+      
+      # This gets the broser viewport dimensions on resize and passes them to shiny as `dimension` variable
+      # https://stackoverflow.com/questions/36995142/get-the-size-of-the-window-in-shiny
+      tags$head(tags$script('
+                            var dimension = [0, 0];
+                            $(document).on("shiny:connected", function(e) {
+                                dimension[0] = window.innerWidth;
+                                dimension[1] = window.innerHeight;
+                                Shiny.onInputChange("dimension", dimension);
+                            });
+                            $(window).resize(function(e) {
+                                dimension[0] = window.innerWidth;
+                                dimension[1] = window.innerHeight;
+                                Shiny.onInputChange("dimension", dimension);
+                            });
+                        ')),
+      
       selectizeInput(
         "chosen_cities", 
         label = "Cities:",
@@ -110,7 +142,7 @@ ui <- fluidPage(
     
     mainPanel(
       width = 9,
-      style = "padding: 0; height: 100%; align-content: left",
+      style = "padding: 0; height: 100%",
       plotOutput("main_plot") %>% 
         shinycssloaders::withSpinner(type = 6)
     )
@@ -118,6 +150,8 @@ ui <- fluidPage(
   )
 )
 
+
+## Server ----
 server <- function(input, output, session) {
   
   df_uc <- read_sf("data/GHS_STAT_UCDB2015MT_GLOBE_R2019A/GHS_STAT_UCDB2015MT_GLOBE_R2019A_V1_2.gpkg")
@@ -129,14 +163,16 @@ server <- function(input, output, session) {
     session,
     "chosen_cities",
     choices = unique(p_data$title),
-    selected = c("PAK-Karachi"),
+    selected = c("PAK-Karachi", "GBR-London", "JPN-Tokyo"),
     server = TRUE
   )
   
   output$main_plot <- renderPlot({
     make_comparison_plot(p_data, input$chosen_cities)
-  })
+  }, height = reactive({0.95 * input$dimension[2]}))
   
 }
 
+
+## Execution ----
 shinyApp(ui, server)
