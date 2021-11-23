@@ -80,26 +80,8 @@ pak_fua %>%
 
 # urban area coverage
 
-
-a <- df_fua %>% 
-  filter(eFUA_name == "Lahore") %>% 
-  mutate(type = "Functional Urban Area") %>% 
-  rename(country = Cntry_name,
-         name = eFUA_name,
-         area = FUA_area) %>%  
-  select(country, name, type, area)
-
-b <- df %>% 
-  filter(UC_NM_MN == "Lahore") %>% 
-  mutate(type = "Urban Center") %>% 
-  rename(country = CTR_MN_NM,
-         name = UC_NM_MN,
-         area = AREA) %>% 
-  select(country, name, type, area)
-
-
 prepare_data <- function(uc, fau) {
-  fau %>% 
+  data <- fau %>% 
     mutate(type = "Functional Urban Area") %>% 
     rename(country = Cntry_ISO,
            name = eFUA_name,
@@ -125,11 +107,19 @@ prepare_data <- function(uc, fau) {
     mutate(
       title = str_c(country, name, sep = "-")
     ) %>% 
-    select(country, name, title, type, area, ratio)
+    select(country, name, title, type, area, ratio) %>% 
+    filter(!(name %in% c("UNNAMED", "N/A")))
+  
+  correct_cities <- as_tibble(data) %>% 
+    count(title) %>% 
+    filter(n > 1) %>% 
+    pull(title)
+  
+  data %>% 
+    filter(title %in% correct_cities)
 }
 
-p_data <- prepare_data(df, df_fua) %>% 
-  filter(!(name %in% c("UNNAMED", "N/A")))
+p_data <- prepare_data(df, df_fua)
 
 p_data %>% 
   select(country, name, ratio) %>% 
@@ -138,7 +128,7 @@ p_data %>%
   geom_histogram() + 
   scale_x_log10(label = scales::label_percent())
 
-compare_types <- function(p_data, names) {
+make_comparison_plot <- function(p_data, names) {
   make_map_plot <- function(d) {
     title = d %>% head(1) %>% pull(title)
     pct = scales::percent(d %>% head(1) %>% pull(ratio), accuracy = 0.01)
@@ -195,10 +185,10 @@ compare_types <- function(p_data, names) {
     )
 }
 
-compare_types(p_data, c("Lahore"))
-compare_types(p_data, c("Lahore", "Karachi", "Quetta", "Peshawar", "Rawalpindi [Islamabad]"))
+make_comparison_plot(p_data, c("Lahore"))
+make_comparison_plot(p_data, c("Lahore", "Karachi", "Quetta", "Peshawar", "Rawalpindi [Islamabad]"))
 
-compare_types(
+make_comparison_plot(
   p_data, 
   p_data %>% 
     filter(ratio < 0.03) %>% 
@@ -206,14 +196,14 @@ compare_types(
     unique() %>% 
     sample(6)
 )
-compare_types(p_data, c("Manama", "SGP-Singapore"))
-compare_types(p_data, c("GBR-Cambridge"))
+make_comparison_plot(p_data, c("Manama", "SGP-Singapore"))
+make_comparison_plot(p_data, c("GBR-Cambridge"))
 
-compare_types(p_data, c("Kabul", "Kandahar", "AFG-Jalalabad", "Gilgit"))
-compare_types(p_data, c("GBR-London", "Madrid"))
-compare_types(p_data, c("Lisbon", "Tokyo", "Seoul"))
-compare_types(p_data, c("GBR-London", "Cairo"))
-compare_types(p_data, c("Lisbon", "New York"))
-compare_types(p_data, c("Chennai", "Bengaluru", "Kolkata", "Delhi [New Delhi]"))
-compare_types(p_data, c("Osaka [Kyoto]", "Istanbul", "Los Angeles"))
-compare_types(p_data, c("BGD-Dhaka", "Jakarta"))
+make_comparison_plot(p_data, c("Kabul", "Kandahar", "AFG-Jalalabad", "Gilgit"))
+make_comparison_plot(p_data, c("GBR-London", "Madrid"))
+make_comparison_plot(p_data, c("Lisbon", "Tokyo", "Seoul"))
+make_comparison_plot(p_data, c("GBR-London", "Cairo"))
+make_comparison_plot(p_data, c("Lisbon", "New York"))
+make_comparison_plot(p_data, c("Chennai", "Bengaluru", "Kolkata", "Delhi [New Delhi]"))
+make_comparison_plot(p_data, c("Osaka [Kyoto]", "Istanbul", "Los Angeles"))
+make_comparison_plot(p_data, c("BGD-Dhaka", "Jakarta"))
