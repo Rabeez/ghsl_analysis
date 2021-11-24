@@ -66,7 +66,7 @@ make_comparison_plot <- function(p_data, names) {
       geom_sf(alpha = 0.5, color = NA) +
       scale_fill_manual(values = c("#1b9e77", "#e7298a")) + 
       # guides(fill = "none") +
-      labs(title = glue::glue("{title} | {pct}")) +
+      labs(title = glue::glue("{title} | Coverage: {pct}")) +
       ggthemes::theme_map()
   }
   
@@ -137,6 +137,12 @@ ui <- fluidPage(
         label = "Cities:",
         choices = NULL,
         multiple = TRUE
+      ),
+      
+      div(
+        class = "alert alert-secondary",
+        withMathJax(),
+        "\\(\\text{Coverage} = \\frac{Area(\\text{Urban Center})}{Area(\\text{Urban Center} \\, \\cup \\, \\text{Functional Urban Area})}\\)"
       )
     ),
     
