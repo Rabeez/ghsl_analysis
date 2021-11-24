@@ -70,6 +70,15 @@ make_comparison_plot <- function(p_data, names) {
       ggthemes::theme_map()
   }
   
+  if (missing(names) | is.null(names) | (length(names) == 0)) {
+    # render blank when cities selection is empty
+    blank_plot <- ggplot(tibble(text = "Please select a city")) + 
+      geom_text(aes(x = 0,y = 0,label = text)) + 
+      theme_void()
+    return(ggplot())
+  }
+  
+  
   data <- p_data %>% 
     filter(title %in% names)
   remaining_titles <- names[!(names %in% unique(data$title))]
@@ -142,7 +151,7 @@ ui <- fluidPage(
       div(
         class = "alert alert-secondary",
         withMathJax(),
-        "\\(\\text{Coverage} = \\frac{Area(\\text{Urban Center})}{Area(\\text{Urban Center} \\, \\cup \\, \\text{Functional Urban Area})}\\)"
+        "\\(\\text{Coverage} = \\frac{Area(\\text{Urban Center})}{Area(\\text{Functional Urban Area})}\\)"
       )
     ),
     
